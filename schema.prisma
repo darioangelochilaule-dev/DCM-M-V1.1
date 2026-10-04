@@ -1,0 +1,11 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+enum Role { ADMIN AGENT USER }
+enum TransactionType { MINT TRANSFER REDEEM }
+enum AccountType { WALLET SANDBOX_RESERVE }
+model User { id String @id @default(cuid()); name String; email String @unique; passwordHash String; role Role @default(USER); createdAt DateTime @default(now()); wallet Wallet?; auditLogs AuditLog[] }
+model Wallet { id String @id @default(cuid()); userId String @unique; balance BigInt @default(0); active Boolean @default(true); createdAt DateTime @default(now()); user User @relation(fields:[userId],references:[id]); entries LedgerEntry[] }
+model LedgerTransaction { id String @id @default(cuid()); type TransactionType; amount BigInt; reference String @unique; description String?; createdAt DateTime @default(now()); entries LedgerEntry[] }
+model LedgerEntry { id String @id @default(cuid()); transactionId String; walletId String?; accountType AccountType; amount BigInt; createdAt DateTime @default(now()); transaction LedgerTransaction @relation(fields:[transactionId],references:[id]); wallet Wallet? @relation(fields:[walletId],references:[id]); @@index([walletId]); @@index([transactionId]) }
+model AuditLog { id String @id @default(cuid()); userId String?; action String; metadata Json?; createdAt DateTime @default(now()); user User? @relation(fields:[userId],references:[id]) }
+model SystemState { id Int @id; reserveCap BigInt; mintedTotal BigInt @default(0); redeemedTotal BigInt @default(0); updatedAt DateTime @updatedAt }
